@@ -1,0 +1,49 @@
+# Example model manifest — copy/rename per model image (1 container = 1 model).
+# Load path is typically set via MODEL_MANIFEST_PATH (e.g. /app/model/manifest.yaml).
+
+schema_version: 1
+
+model:
+  id: example-clustering
+  name: Example WKMeans
+  version: "0.1.0"
+  task: clustering
+  description: "Replace with your model description."
+
+runtime:
+  # Import path: "package.module:ClassName" — must implement the ModelPredictor port.
+  adapter: "modelrunner.adapters.dummy:DummyAdapter"
+  artifacts:
+    # Relative to the manifest file's directory unless overridden by artifacts_root env.
+    base_dir: artifacts
+    paths:
+      weights: model.pkl
+      config: config.json
+
+input:
+  features:
+    # Order is authoritative: POST body is a dict; server maps keys → this order.
+    - name: feature_a
+      type: float
+      required: true
+      constraints:
+        min: null
+        max: null
+    - name: feature_b
+      type: float
+      required: true
+    - name: optional_flag
+      type: bool
+      required: false
+      default: false
+
+output:
+  # Describes the JSON object returned by POST /predict (for OpenAPI + SDK).
+  fields:
+    - name: cluster_id
+      type: int
+      description: "Assigned cluster index."
+    - name: distance
+      type: float
+      description: "Distance to cluster center (if applicable)."
+      required: false
