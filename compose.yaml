@@ -1,0 +1,20 @@
+# Run ModelRunner with WKMeans manifest + artifacts from tests/wkmeans.
+#
+# Build the image first (see docker-bake.hcl):
+#   docker buildx bake -f docker-bake.hcl
+#
+# Then:
+#   docker compose up
+
+services:
+  wkmeans:
+    image: modelrunner:local
+    ports:
+      - "8000:8000"
+    environment:
+      MODEL_MANIFEST_PATH: /app/model/manifest.yaml
+      PYTHONPATH: /app/src
+    volumes:
+      - ./tests/wkmeans:/app/model:ro
+      # Plugin package mounted as volume (image stays generic).
+      - ../WKmeans:/opt/plugins/WKmeans:ro
