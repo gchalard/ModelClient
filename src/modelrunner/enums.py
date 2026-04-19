@@ -1,4 +1,4 @@
-from enum import Enum
+from enum import StrEnum
 
-class AdapterType(Enum):
+class AdapterType(StrEnum):
     WKMEANS = "modelrunner.adapters.wkmeans:WKMeansAdapter"
