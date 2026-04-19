@@ -206,18 +206,32 @@ class Manifest:
     input: InputSpec
     output: OutputSpec
     schema_version: int = 1
+    #: Arbitrary JSON-serializable map exposed on ``GET /predict`` (e.g. regime hints).
+    metadata: dict[str, Any] | None = None
 
     @classmethod
     def from_dict(cls, raw: Any) -> Manifest:
         """Parse and validate a manifest mapping (e.g. from YAML/JSON)."""
         d = _expect_mapping(raw, "manifest root")
+        meta = d.get("metadata")
+        if meta is not None and not isinstance(meta, dict):
+            msg = "metadata must be a mapping when present"
+            raise TypeError(msg)
         return cls(
             schema_version=int(d.get("schema_version", 1)),
             model=ModelInfo.from_dict(d.get("model")),
             runtime=RuntimeSpec.from_dict(d.get("runtime")),
             input=InputSpec.from_dict(d.get("input")),
             output=OutputSpec.from_dict(d.get("output")),
+            metadata=meta,
         )
+
+    def export(self, path: str | Path | None = None) -> str:
+        """Return manifest as YAML; if ``path`` is set, write the same text there (UTF-8)."""
+        text = manifest_to_yaml(self)
+        if path is not None:
+            Path(path).write_text(text, encoding="utf-8")
+        return text
 
 
 def load_manifest(path: str | Path) -> Manifest:
@@ -237,3 +251,22 @@ def manifest_to_plain_dict(manifest: Manifest) -> dict[str, Any]:
     extra = paths.pop("extra", {})
     paths.update(extra)
     return data
+
+
+def _strip_none_manifest(obj: Any) -> Any:
+    if isinstance(obj, dict):
+        return {k: _strip_none_manifest(v) for k, v in obj.items() if v is not None}
+    if isinstance(obj, list):
+        return [_strip_none_manifest(v) for v in obj]
+    return obj
+
+
+def manifest_to_yaml(manifest: Manifest) -> str:
+    """Serialize a manifest to YAML text (no file I/O)."""
+    data = _strip_none_manifest(manifest_to_plain_dict(manifest))
+    return yaml.safe_dump(
+        data,
+        default_flow_style=False,
+        allow_unicode=True,
+        sort_keys=False,
+    )
