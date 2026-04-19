@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
+from enum import Enum
 from pathlib import Path
 from typing import Any, Literal
 
@@ -261,9 +262,24 @@ def _strip_none_manifest(obj: Any) -> Any:
     return obj
 
 
+def _to_yaml_safe(obj: Any) -> Any:
+    """Make nested structures ``yaml.safe_dump``-compatible (e.g. ``StrEnum`` is not a registered representer)."""
+    if isinstance(obj, Enum):
+        return _to_yaml_safe(obj.value)
+    if isinstance(obj, Path):
+        return str(obj)
+    if isinstance(obj, dict):
+        return {k: _to_yaml_safe(v) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_to_yaml_safe(x) for x in obj]
+    if isinstance(obj, tuple):
+        return tuple(_to_yaml_safe(x) for x in obj)
+    return obj
+
+
 def manifest_to_yaml(manifest: Manifest) -> str:
     """Serialize a manifest to YAML text (no file I/O)."""
-    data = _strip_none_manifest(manifest_to_plain_dict(manifest))
+    data = _to_yaml_safe(_strip_none_manifest(manifest_to_plain_dict(manifest)))
     return yaml.safe_dump(
         data,
         default_flow_style=False,
