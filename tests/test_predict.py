@@ -20,6 +20,14 @@ def test_get_predict_contract(client: TestClient) -> None:
     data = r.json()
     assert data["openapi"] == "3.1.0"
     assert "/predict" in data["paths"]
+    assert data["metadata"]["example_note"] == "optional deployment hints"
+    assert "manifest" in data
+    assert data["manifest"]["model"]["id"] == "example-clustering"
+    assert [f["name"] for f in data["manifest"]["input"]["features"]] == [
+        "feature_a",
+        "feature_b",
+        "optional_flag",
+    ]
 
 
 def test_post_predict_ok(client: TestClient) -> None:
