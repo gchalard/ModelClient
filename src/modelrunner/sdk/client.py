@@ -7,6 +7,9 @@ from typing import Any
 
 import httpx
 
+from modelrunner.manifest import Manifest
+from modelrunner.sdk.predict_doc import feature_names_from_predict_doc
+
 
 @dataclass(frozen=True, slots=True)
 class ModelRunnerClientConfig:
@@ -76,6 +79,25 @@ class ModelRunnerClient:
         r.raise_for_status()
         return r.json()
 
+    def get_features(self) -> list[str]:
+        """Feature names for POST ``/predict``, in manifest order (from the OpenAPI fragment)."""
+        return feature_names_from_predict_doc(self.get_contract())
+
+    def get_metadata(self) -> dict[str, Any] | None:
+        """Optional deployment ``metadata`` from the manifest (``None`` if unset)."""
+        doc = self.get_contract()
+        meta = doc.get("metadata")
+        return meta if isinstance(meta, dict) else None
+
+    def get_manifest(self) -> Manifest:
+        """Full validated :class:`~modelrunner.manifest.Manifest` embedded in GET ``/predict``."""
+        doc = self.get_contract()
+        raw = doc.get("manifest")
+        if not isinstance(raw, dict):
+            msg = "GET /predict response has no manifest object; upgrade the ModelRunner server"
+            raise ValueError(msg)
+        return Manifest.from_dict(raw)
+
     def predict(self, *, features: dict[str, Any]) -> dict[str, Any]:
         """POST /predict with a ``{feature_name: value}`` body."""
         r = self._http.post("/predict", json=features)
@@ -139,6 +161,22 @@ class AsyncModelRunnerClient:
         r = await self._http.get("/predict")
         r.raise_for_status()
         return r.json()
+
+    async def get_features(self) -> list[str]:
+        return feature_names_from_predict_doc(await self.get_contract())
+
+    async def get_metadata(self) -> dict[str, Any] | None:
+        doc = await self.get_contract()
+        meta = doc.get("metadata")
+        return meta if isinstance(meta, dict) else None
+
+    async def get_manifest(self) -> Manifest:
+        doc = await self.get_contract()
+        raw = doc.get("manifest")
+        if not isinstance(raw, dict):
+            msg = "GET /predict response has no manifest object; upgrade the ModelRunner server"
+            raise ValueError(msg)
+        return Manifest.from_dict(raw)
 
     async def predict(self, *, features: dict[str, Any]) -> dict[str, Any]:
         r = await self._http.post("/predict", json=features)

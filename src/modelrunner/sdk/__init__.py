@@ -13,6 +13,7 @@ from modelrunner.manifest import (
     OutputSpec,
     RuntimeSpec,
     load_manifest,
+    manifest_to_yaml,
 )
 from modelrunner.sdk.client import (
     AsyncModelRunnerClient,
@@ -20,11 +21,8 @@ from modelrunner.sdk.client import (
     ModelRunnerClient,
     ModelRunnerClientConfig,
 )
-from modelrunner.sdk.manifest_io import (
-    manifest_to_yaml,
-    validate_manifest,
-    write_manifest,
-)
+from modelrunner.sdk.manifest_io import validate_manifest, write_manifest
+from modelrunner.sdk.predict_doc import feature_names_from_predict_doc
 
 read_manifest = load_manifest
 
@@ -36,6 +34,7 @@ __all__ = [
     "FeatureConstraints",
     "FeatureSpec",
     "FeatureType",
+    "feature_names_from_predict_doc",
     "InputSpec",
     "Manifest",
     "ModelInfo",
